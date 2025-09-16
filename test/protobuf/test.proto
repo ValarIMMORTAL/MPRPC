@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package pbTest;
+
+// 生成服务类和RPC方法
+option cc_generic_services = true;
+
+message ResultCode{
+    int32 errcode = 1;
+    bytes errmesg = 2;
+}
+
+message LoginRequest{
+    bytes name = 1;
+    bytes pwd = 2;
+}
+
+message LoginResponse{
+    ResultCode result = 1;
+    bool success = 2;
+}
+
+message GetFriendListsRequest{
+    uint32 userid = 1;
+}
+
+message User {
+    bytes name = 1;
+    uint32 age = 2;
+    enum Gender {
+        MAN = 0;
+        WOMAN = 1;
+    }
+    Gender gender = 3;
+}
+
+message GetFriendListsResponse{
+    ResultCode result = 1;
+    repeated User friend_list = 2;
+}
+
+service UserServiceRpc{
+    rpc login(LoginRequest) returns(LoginResponse);
+    rpc GetFriendLists(GetFriendListsRequest) returns(GetFriendListsResponse);
+}
