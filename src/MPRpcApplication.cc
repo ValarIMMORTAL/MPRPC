@@ -51,7 +51,11 @@ void MPRpcApplication::Init(int argc, char **argv) {
 	// 		  << std::endl;
 }
 
-MPRpcApplication &MPRpcApplication::GetInstance() {
+MPRpcApplication& MPRpcApplication::GetInstance() {
 	static MPRpcApplication app;
 	return app;
+}
+
+MPRpcConfig& MPRpcApplication::GetConfig(){
+	return m_config;
 }

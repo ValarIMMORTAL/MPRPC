@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
 	// 创建网络服务对象，发布到RPC节点
 	MPRpcProvider provider;
-	provider.NotifyCation(new UserService());
+	provider.NotifyService(new UserService());
 	
 	provider.Run();
 }
