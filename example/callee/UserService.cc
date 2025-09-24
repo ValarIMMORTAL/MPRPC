@@ -9,7 +9,7 @@ class UserService : public User::UserServiceRpc {
 	bool login(std::string name, std::string pwd) {
 		std::cout << "Local Service: login" << std::endl;
 		std::cout << "name: " << name << ", pwd: " << pwd << std::endl;
-		return true;
+		return false;
 	}
 	// 重写基类UserServiceRpc的虚函数
 	void login(::google::protobuf::RpcController *controller,
