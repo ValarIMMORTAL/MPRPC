@@ -42,7 +42,7 @@ void MPRpcChannel::CallMethod(const google::protobuf::MethodDescriptor *method,
 	if (rpcHeader.SerializeToString(&rpc_header_str)) {
 		header_size = rpc_header_str.size();
 	} else {
-		std::cout << "serialize rpc header error!" << std::endl;
+		controller->SetFailed("serialize rpc header error!");
 		return;
 	}
 
@@ -63,9 +63,10 @@ void MPRpcChannel::CallMethod(const google::protobuf::MethodDescriptor *method,
 	// 使用TCP编程，完成rpc方法的远程调用
 	int clientfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (-1 == clientfd) {
-		std::cout << "create socket error! errno: " << errno
-				  << std::endl; // 改用controller记录错误信息
-		exit(EXIT_FAILURE);
+		char errtxt[512] = {0};
+		sprintf(errtxt, "create socket error! errno: %d", errno);
+		controller->SetFailed(errtxt);
+		return;
 	}
 
 	// 读取配置文件rpcserver的信息
@@ -84,16 +85,19 @@ void MPRpcChannel::CallMethod(const google::protobuf::MethodDescriptor *method,
 	// 链接rpc服务节点
 	if (-1 == connect(clientfd, (struct sockaddr *)&server_addr,
 					  sizeof(server_addr))) {
-
-		std::cout << "connect error!errno: " << errno << std::endl;
 		close(clientfd);
-		exit(EXIT_FAILURE);
+		char errtxt[512] = {0};
+		sprintf(errtxt, "connect socket error! errno: %d", errno);
+		controller->SetFailed(errtxt);
+		return;
 	}
 
 	// 发送rpc请求
 	if (-1 == send(clientfd, send_rpc_str.c_str(), send_rpc_str.size(), 0)) {
-		std::cout << "send error!errno: " << errno << std::endl;
 		close(clientfd);
+		char errtxt[512] = {0};
+		sprintf(errtxt, "send socket error! errno: %d", errno);
+		controller->SetFailed(errtxt);
 		return; // 结束本次rpc调用
 	}
 
@@ -101,8 +105,10 @@ void MPRpcChannel::CallMethod(const google::protobuf::MethodDescriptor *method,
 	char recv_buf[1024] = {0};
 	int recv_size = 0;
 	if (-1 == (recv_size = recv(clientfd, recv_buf, 1024, 0))) {
-		std::cout << "recv error!errno: " << errno << std::endl;
 		close(clientfd);
+		char errtxt[512] = {0};
+		sprintf(errtxt, "recv socket error! errno: %d", errno);
+		controller->SetFailed(errtxt);
 		return;
 	}
 	// std::cout<<recv_buf<<std::endl;
@@ -113,8 +119,10 @@ void MPRpcChannel::CallMethod(const google::protobuf::MethodDescriptor *method,
 	std::string response_str(recv_buf, 0, recv_size);
 	// if(!response->ParseFromString(response_str))
 	if (!response->ParsePartialFromArray(recv_buf, recv_size)) {
-		std::cout << "parse error! response_str:" << response_str << std::endl;
 		close(clientfd);
+		char errtxt[512] = {0};
+		sprintf(errtxt, "recv socket error! errno: %s", recv_buf);
+		controller->SetFailed(errtxt);
 		return;
 	}
 	close(clientfd);

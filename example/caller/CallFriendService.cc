@@ -1,6 +1,7 @@
 #include "MPRpcApplication.h"
 #include "MPRpcChannel.h"
 #include "MPRpcConfig.h"
+#include "MPRpcController.h"
 #include "MPRpcProvider.h"
 #include "friend.pb.h"
 #include <iostream>
@@ -18,11 +19,17 @@ int main(int argc, char **argv) {
 
 	// rpc方法的响应
 	Friend::GetFriendListResponse response;
+	MprpcController controller;
 	// 发起rpc方法的调用，同步的rpc调用过程，MprpcChannel::callmethod
-	stub.GetFriendList(nullptr, &request, &response, nullptr);
-	// stub.Login();//RpcChannel->RpcChannel::callMethod
+	stub.GetFriendList(&controller, &request, &response, nullptr);
 	// 集中来做所有rpc方法调用的参数序列化和网络发送
 
+	// 一次rpc调用完成，读取调用的结果
+	if (controller.Failed()) {
+		std::cout << controller.ErrorText() << std::endl;
+		return 0;
+	}
+	
 	if (0 == response.result()
 				 .errcode()) // 由于调用不一定成功，所以不要直接访问他的reslut
 	{
