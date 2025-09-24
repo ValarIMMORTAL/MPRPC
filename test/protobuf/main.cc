@@ -27,23 +27,24 @@ int main() {
   ResultCode *frc = frsp.mutable_result();
   frc->set_errcode(1);
 
-  User* user1 = frsp.add_friend_list();
+  User *user1 = frsp.add_friend_list();
   user1->set_name("Tom");
   user1->set_age(20);
   user1->set_gender(pbTest::User_Gender_MAN);
 
-  User* user2 = frsp.add_friend_list();
+  User *user2 = frsp.add_friend_list();
   user2->set_name("Jerry");
   user2->set_age(18);
   user2->set_gender(pbTest::User_Gender_MAN);
 
   std::cout << frsp.friend_list_size() << std::endl;
-  User* resUser = frsp.mutable_friend_list(0);
-  std::cout << resUser->name() << resUser->age() << resUser->gender() << std::endl;
+  User *resUser = frsp.mutable_friend_list(0);
+  std::cout << resUser->name() << resUser->age() << resUser->gender()
+            << std::endl;
 
   resUser->set_age(19);
-  
-  User* checkResUser = frsp.mutable_friend_list(0);
+
+  User *checkResUser = frsp.mutable_friend_list(0);
   std::cout << checkResUser->age() << std::endl;
 
   return 0;
