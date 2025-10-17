@@ -1,6 +1,8 @@
 #include "MPRpcProvider.h"
 #include "MPRpcApplication.h"
+#include "logger.h"
 #include "rpcheader.pb.h"
+#include "zookeeperutil.h"
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -17,13 +19,13 @@ void MPRpcProvider::NotifyService(google::protobuf::Service *service) {
   const google::protobuf::ServiceDescriptor *pServiceDesc =
       service->GetDescriptor();
   std::string serviceName = pServiceDesc->name();
-  std::cout << "service name:" << serviceName << std::endl;
+  LOG_INFO("service_name:%s", serviceName.c_str());
   int methodCount = pServiceDesc->method_count();
   for (int i = 0; i < methodCount; i++) {
     const google::protobuf::MethodDescriptor *pMethodDesc =
         pServiceDesc->method(i);
     std::string methodName = pMethodDesc->name();
-    std::cout << "method name:" << methodName << std::endl;
+    LOG_INFO("method_name:%s", methodName.c_str());
     serviceInfo.m_methodMap.insert({methodName, pMethodDesc});
   }
   serviceInfo.m_service = service;
@@ -54,6 +56,28 @@ void MPRpcProvider::Run() {
 
   std::cout << "RpcProvider start service at ip:" << ip << " port:" << port
             << std::endl;
+
+  // 把当前rpc节点上要发布的服务全部注册在zk上，让rpc client可以从zk上发现服务
+  // session的timeout默认为30s，zkclient的网络I/O线程1/3的timeout内不发送心跳则丢弃此节点
+  ZkClient zkCli;
+  zkCli.Start(); // 链接zkserver
+  for (auto &sp : m_serviceMap) {
+    // service_name
+    std::string service_path = "/" + sp.first;      // 拼接路径
+    zkCli.Create(service_path.c_str(), nullptr, 0); // 创建临时性节点
+    for (auto &mp : sp.second.m_methodMap) {
+      // service_name/method_name
+      std::string method_path =
+          service_path + "/" + mp.first; // 拼接服务器路径和方法路径
+      char method_path_data[128] = {0};
+      sprintf(method_path_data, "%s:%d", ip.c_str(), port); // 向data中写入路径
+
+      // 创建节点,ZOO_EPHEMERAL表示临时节点
+      zkCli.Create(method_path.c_str(), method_path_data,
+                   strlen(method_path_data), ZOO_EPHEMERAL);
+    }
+  }
+
   // 启动网络服务
   server.start();
   m_eventLoop.loop(); // 启动epollwait
